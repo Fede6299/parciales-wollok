@@ -1,121 +1,111 @@
-class Persona {
-	const property elementosCercanos = []
+class Comensal {
+	var property posicion
+	const property elementos_cerca = []
+	var property criterio
+
+	var property criterio_de_comida
 	const property comidas = []
-	var property criterioParaDarElemento = sordo
-	const posiciones = []
-	var property criterioDeComida = vegetariano
 
-	method posicion(nuevaPosicion) {
-		posiciones.add(nuevaPosicion)
+	method primer_elemento() = elementos_cerca.head()
+	method quitar_elemento(elemento) {
+		self.elementos_cerca().remove(elemento)
 	}
-
-	method posicion() = posiciones.last()
-
-	method tieneElemento(elemento) = elementosCercanos.contains(elemento)
-
-	method agregarElementos(elementos) {
-		elementosCercanos.addAll(elementos)
+	method agregar_elemento(elemento) {
+		self.elementos_cerca().add(elemento)
 	}
+	method quitar_todos_los_elementos() {
+		self.elementos_cerca().clear()
+	}
+	method agregar_todos_los_elementos(amigo) {
+		amigo.elementos_cerca().forEach({e => self.agregar_elemento(e)})
+	}
+	method tiene_el_elemento(elemento) = elementos_cerca.contains(elemento)
 
-	method darElemento(elemento, personaQuePide) {
-		if (!self.tieneElemento(elemento)) {
-			throw new DomainException(message = "No tengo cerca el elemento" + elemento)
-		}
-		criterioParaDarElemento.pasarElemento(elemento, self, personaQuePide)
+	method intentar_pasar_elemento(amigo, elemento) {
+		if(not amigo.tiene_el_elemento(elemento)) { throw new DomainException(message = "No tengo cerca el elemento " + elemento) }
+		else self.criterio().pasar_elemento(self, elemento, amigo)
 	}
 
 	method comer(comida) {
-		if (criterioDeComida.acepta(comida)) {
-			comidas.add(comida)
+		if(not self.criterio_de_comida().le_gusta(comida)) {
+			throw new DomainException(message = "No le gusta " + comida)
 		}
+		else comidas.add(comida)
 	}
 
-	method quitarElementos(elementos) {
-		elementosCercanos.removeAllSuchThat{ elementoCercano => elementos.contains(elementoCercano)}
+	method esta_pipon() = comidas.all({comida => comida.es_pesada()})
+	method comio_algo() = not comidas.isEmpty()
+	method la_pasa_bien() = self.comio_algo() and self.la_paso_bien_amgio()
+	method la_paso_bien_amgio()
+}
+
+object sordo {
+	method pasar_elemento(comensal, elemento, amigo) {
+		comensal.agregar_elemento(amigo.primer_elemento())
+		amigo.quitar_elemento(amigo.primer_elemento())
 	}
-
-	method primerElementoCercano() = elementosCercanos.head()
-
-	method estaPipon() = comidas.any{ comida => comida.esPesada() }
-	method comioAlgo() = !comidas.isEmpty()
-	method laPasaBien() = self.comioAlgo() && self.lapasaBienPersonalmente()
-	method lapasaBienPersonalmente()
+}
+object molesto {
+	method pasar_elemento(comensal, elemento, amigo) {
+		comensal.agregar_todos_los_elementos(amigo)
+		amigo.quitar_todos_los_elementos()
+	}
+}
+object incomodo {
+	method pasar_elemento(comensal, elemento, amigo) {
+		const posicion_comensal = comensal.posicion()
+		comensal.posicion(amigo.posicion())
+		amigo.posicion(posicion_comensal)
+	}
 }
 
-object osky inherits Persona {
-	override method lapasaBienPersonalmente() = true
-}
-
-object moni inherits Persona {
-	override method lapasaBienPersonalmente() = posiciones.contains(game.at(1, 1))
-}
-
-object facu inherits Persona {
-	override method lapasaBienPersonalmente() = comidas.any{ comida => comida.esCarne() }
-}
-
-object vero inherits Persona {
-	override method lapasaBienPersonalmente() = elementosCercanos.size() <= 3
+object coherente {
+	method pasar_elemento(comensal, elemento, amigo) {
+		comensal.agregar_elemento(elemento)
+		amigo.quitar_elemento(elemento)
+	}
 }
 
 class Comida {
-	const property calorias = 100
-	const property esCarne = false
+	var property calorias
+	var property es_carne
 
-	method esPesada() = calorias > 500
-}
-
-class CriterioAPasarElementos {
-	method pasarElemento(elemento, personaQueDa, personaQueRecibe) {
-		const elementosAPasar = self.elementosAPasar(elemento, personaQueDa)
-		personaQueRecibe.agregarElementos(elementosAPasar)
-		personaQueDa.quitarElementos(elementosAPasar)
-	}
-	method elementosAPasar(elemento, personaQueDa)
-}
-
-object sordo inherits CriterioAPasarElementos {
-	override method elementosAPasar(elemento, personaQueDa) = [ personaQueDa.primerElementoCercano() ]
-}
-
-object irritable inherits CriterioAPasarElementos {
-	override method elementosAPasar(elemento, personaQueDa) = personaQueDa.elementosCercanos()
-}
-
-object movedizo {
-	method pasarElemento(elemento, personaQueDa, personaQuePide) {
-		const posicionDeLaQuePide = personaQuePide.posicion()
-		personaQuePide.posicion(personaQueDa.posicion())
-		personaQueDa.posicion(posicionDeLaQuePide)
-	}
-}
-
-object obediente inherits CriterioAPasarElementos {
-	override method elementosAPasar(elemento, personaQueDa) = [elemento]
+	method pocas_calorias() = calorias < 500
+	method es_pesada() = calorias > 500
 }
 
 object vegetariano {
-	method acepta(comida) = not comida.esCarne()
+	method le_gusta(comida) = not comida.es_carne()
 }
 
-object dietetico {
-	var property limiteDeCalorias = 500
-
-	method acepta(comida) = comida.calorias() < limiteDeCalorias
+object diabetico {
+	method le_gusta(comida) = comida.pocas_calorias()
 }
 
 class Alternado {
 	var quiero = false
-
-	method acepta(comida) {
-		quiero = !quiero
-		return not quiero
-	}
+	method le_gusta(comida) { 
+		quiero = not quiero
+		return not quiero }
 }
 
-class AceptacionCombinada {
-	const property criteriosDeAceptacion = []
+class Comibinacion {
+	const property combinacion_comida = []
+	method le_gusta(comida) = combinacion_comida.all({criterio => criterio.le_gusta(comida)})
+}
 
-	method agregarCriterios(criterios) = criteriosDeAceptacion.addAll(criterios)
-	method acepta(comida) = criteriosDeAceptacion.all{ criterio => criterio.acepta(comida) }
+object osky inherits Comensal(posicion = 10, criterio = coherente, criterio_de_comida = vegetariano) {
+	override method la_paso_bien_amgio() = true
+}
+
+object moni inherits Comensal(posicion = 11, criterio = coherente, criterio_de_comida = vegetariano) {
+	override method la_paso_bien_amgio() = self.posicion() == 11
+}
+
+object facu inherits Comensal(posicion = 5, criterio = sordo, criterio_de_comida = vegetariano){
+	override method la_paso_bien_amgio() = self.comidas().any({comida => comida.es_carne()})
+}
+
+object vero inherits Comensal(posicion = 5, criterio = sordo, criterio_de_comida = vegetariano) {
+	override method la_paso_bien_amgio() = self.elementos_cerca().size() <= 3
 }
